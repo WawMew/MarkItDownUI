@@ -3,8 +3,7 @@
 基于 **PyQt6 + Microsoft MarkItDown** 的 Windows 桌面工具：把 PDF、Word、PPT、Excel、HTML 等文档批量转成 Markdown，保留标题层级、列表与表格结构，支持实时预览与一键导出。
 
 > 仓库地址：**https://github.com/WawMew/MarkItDownUI**
->
-> 克隆：`git clone https://github.com/WawMew/MarkItDownUI.git`
+
 
 ## 功能
 
