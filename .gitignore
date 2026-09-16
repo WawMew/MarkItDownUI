@@ -1,0 +1,32 @@
+# ── 虚拟环境（约 658 MB，可用 requirements.txt 重建）────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── 打包产物（约 117 MB，可用 构建exe.bat 重建）─────────────────
+build/
+dist/
+*.manifest
+
+# ── Python 缓存与编译产物 ───────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── 运行时产物 ─────────────────────────────────────────────────
+启动错误.log
+
+# ── 编辑器与系统 ───────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*~
+Thumbs.db
+desktop.ini
+.DS_Store
