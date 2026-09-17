@@ -13,6 +13,33 @@ import os
 import sys
 import traceback
 
+try:
+    from i18n import 译
+except Exception:      # pragma: no cover - i18n 缺失不该让兜底提示一起失效
+    def 译(原文: str, **参数) -> str:
+        try:
+            return 原文.format(**参数) if 参数 else 原文
+        except Exception:
+            return 原文
+
+
+def _准备界面语言() -> None:
+    """崩溃提示也得说用户当前选的语言；Qt 不可用时退回系统语言。"""
+    try:
+        import i18n
+
+        语言 = ""
+        try:
+            # 配置存在「程序目录/config/config.json」，读它不需要 QApplication 也能跑
+            import config
+
+            语言 = str(config.打开().value("语言", ""))
+        except Exception:
+            pass
+        i18n.设置语言(语言 or i18n.跟随系统())
+    except Exception:
+        pass
+
 
 def _程序目录() -> str:
     """冻结后 sys.executable 是 exe 自身；源码运行时是本文件所在目录。"""
@@ -32,19 +59,20 @@ def _写错误日志(详情: str) -> str:
 
 
 def _启动图形界面() -> int:
+    _准备界面语言()
     try:
         import ui
     except Exception:
         详情 = traceback.format_exc()
         日志路径 = _写错误日志(详情)
-        提示 = "程序启动失败。\n\n" + 详情.strip().splitlines()[-1]
+        提示 = 译("程序启动失败。\n\n") + 详情.strip().splitlines()[-1]
         if 日志路径:
-            提示 += f"\n\n完整信息已写入：\n{日志路径}"
+            提示 += "\n\n" + 译("完整信息已写入：\n{路径}", 路径=日志路径)
         try:
             from PyQt6.QtWidgets import QApplication, QMessageBox
 
             应用 = QApplication.instance() or QApplication(sys.argv)
-            QMessageBox.critical(None, "启动失败", 提示)
+            QMessageBox.critical(None, 译("启动失败"), 提示)
         except Exception:
             print(提示, file=sys.stderr)
         return 1
@@ -60,9 +88,13 @@ def _启动图形界面() -> int:
             应用 = QApplication.instance() or QApplication(sys.argv)
             QMessageBox.critical(
                 None,
-                "运行出错",
-                "程序运行中发生未预期的错误。\n\n" + 详情.strip().splitlines()[-1]
-                + (f"\n\n完整信息已写入：\n{日志路径}" if 日志路径 else ""),
+                译("运行出错"),
+                译("程序运行中发生未预期的错误。\n\n") + 详情.strip().splitlines()[-1]
+                + (
+                    "\n\n" + 译("完整信息已写入：\n{路径}", 路径=日志路径)
+                    if 日志路径
+                    else ""
+                ),
             )
         except Exception:
             print(详情, file=sys.stderr)

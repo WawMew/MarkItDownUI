@@ -16,7 +16,7 @@
 import os
 import re
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, copy_metadata
 
 _规格路径 = globals().get("SPEC") or globals().get("SPECPATH") or ""
 项目目录 = os.path.abspath(os.path.dirname(_规格路径)) if _规格路径 else os.path.abspath(os.getcwd())
@@ -24,12 +24,19 @@ _规格路径 = globals().get("SPEC") or globals().get("SPECPATH") or ""
 # ── 需要随包携带的数据文件 ────────────────────────────────────────
 # magika：文件类型嗅探的模型与配置（MarkItDown 在初始化时构造它）
 # pdfminer：CMap 资源，缺了它 CJK / CID 字体的 PDF 会提取出乱码
+# markitdown-ocr 的 dist-info：插件是靠 importlib.metadata 的 entry point
+#   （组名 markitdown.plugin）被发现的，只打包代码不打元数据，
+#   在 exe 里 enable_plugins=True 会一个插件都找不到 —— 而且不报错。
 数据文件 = []
 for 包名 in ("magika", "pdfminer", "charset_normalizer"):
     try:
         数据文件 += collect_data_files(包名)
     except Exception:
         pass
+try:
+    数据文件 += copy_metadata("markitdown-ocr")
+except Exception:
+    pass
 
 # ── 明确不打包的 Python 模块 ──────────────────────────────────────
 排除模块 = [
@@ -54,6 +61,10 @@ for 包名 in ("magika", "pdfminer", "charset_normalizer"):
     # 其它明确用不到的第三方库
     "IPython", "jupyter", "notebook", "matplotlib", "scipy", "pytest", "nose",
     "sqlalchemy", "torch", "cv2", "sklearn",
+    # PyMuPDF：markitdown-ocr 只在「pdfplumber 打不开的畸形 PDF」时用它兜底渲染，
+    # 主路径走 pdfplumber + pypdfium2。它自带 26 MB 的 mupdfcpp64.dll，
+    # 压缩后仍会让 exe 涨约 20 MB —— 为这点兜底能力不值得，直接排除。
+    "pymupdf", "fitz",
 ]
 
 # ── Qt 二进制的剔除规则 ───────────────────────────────────────────
@@ -122,6 +133,23 @@ a = Analysis(
         "defusedxml", "charset_normalizer", "magika", "onnxruntime",
         "markitdown.converters", "markitdown.converter_utils.docx",
         "markitdown.converter_utils.docx.math",
+        # ── LLM OCR ──────────────────────────────────────────────
+        # 插件与 openai 都是运行期才导入的（前者靠 entry point 加载，
+        # 后者在用户勾选 LLM OCR 时才 import），静态分析扫不到，必须显式列出，
+        # 否则 exe 里点「测试连接」只会得到 ModuleNotFoundError。
+        "markitdown_ocr",
+        "markitdown_ocr._plugin",
+        "markitdown_ocr._ocr_service",
+        "markitdown_ocr._pdf_converter_with_ocr",
+        "markitdown_ocr._docx_converter_with_ocr",
+        "markitdown_ocr._pptx_converter_with_ocr",
+        "markitdown_ocr._xlsx_converter_with_ocr",
+        "docx", "docx.oxml", "docx.oxml.ns", "docx.opc.constants", "docx.shared",
+        "PIL", "PIL.Image", "PIL.ImageDraw",
+        "openai", "openai._client", "openai._base_client", "openai._models",
+        "openai.resources", "openai.resources.chat", "openai.resources.chat.completions",
+        "openai.types", "openai.types.chat", "httpx2", "httpx2._client",
+        "jiter", "pydantic", "pydantic_core", "truststore",
     ],
     hookspath=[],
     hooksconfig={},

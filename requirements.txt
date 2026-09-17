@@ -1,2 +1,14 @@
 PyQt6>=6.6
 markitdown[all]>=0.1.0
+
+# ── LLM OCR（可选功能，不给也可以正常使用其余功能）────────────────
+# 用兼容 OpenAI 接口的视觉大模型识别图片与扫描件中的文字。
+# 三者缺一不可，尤其别漏 python-docx —— 少了它 Word 的 OCR 会「静默失效」：
+# 不报错、输出看起来正常，但内嵌图片一张都没识别。
+markitdown-ocr>=0.1.0
+openai>=1.0.0
+python-docx>=1.1.0
+
+# pymupdf 是 markitdown-ocr 声明的依赖，仅用于「pdfplumber 打不开的畸形 PDF」
+# 的兜底渲染，体积却有 50 MB 以上，因此打包 exe 时已排除（见 MarkItDownUI.spec）。
+# 源码方式运行时装着无妨。
